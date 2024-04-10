@@ -29,9 +29,40 @@ st.dataframe(sales_by_month)
 # Here the grouped months are the index and automatically used for the x axis
 st.line_chart(sales_by_month, y="Sales")
 
-st.write("## Your additions")
-st.write("### (1) add a drop down for Category (https://docs.streamlit.io/library/api-reference/widgets/st.selectbox)")
-st.write("### (2) add a multi-select for Sub_Category *in the selected Category (1)* (https://docs.streamlit.io/library/api-reference/widgets/st.multiselect)")
-st.write("### (3) show a line chart of sales for the selected items in (2)")
-st.write("### (4) show three metrics (https://docs.streamlit.io/library/api-reference/data/st.metric) for the selected items in (2): total sales, total profit, and overall profit margin (%)")
-st.write("### (5) use the delta option in the overall profit margin metric to show the difference between the overall average profit margin (all products across all categories)")
+# Add a dropdown for Category selection
+selected_category = st.selectbox("Select a Category", df['Category'].unique())
+
+# Filter the DataFrame based on the selected Category
+filtered_df = df[df['Category'] == selected_category]
+
+st.dataframe(filtered_df)
+
+# Add a multi-select for Sub_Category in the selected Category
+selected_subcategories = st.multiselect("Select Subcategories", filtered_df['Sub_Category'].unique())
+
+# Filter the DataFrame based on the selected Subcategories
+filtered_df = filtered_df[filtered_df['Sub_Category'].isin(selected_subcategories)]
+
+# Show a line chart of sales for the selected items
+if not filtered_df.empty:
+    sales_by_date = filtered_df.groupby('Order_Date')['Sales'].sum()
+    st.line_chart(sales_by_date)
+
+    # Show three metrics for the selected items: total sales, total profit, and overall profit margin (%)
+    total_sales = filtered_df['Sales'].sum()
+    total_profit = filtered_df['Profit'].sum()
+    overall_profit_margin = (total_profit / total_sales) * 100
+
+    st.write("### Metrics")
+    st.metric(label="Total Sales", value=total_sales)
+    st.metric(label="Total Profit", value=total_profit)
+    st.metric(label="Overall Profit Margin (%)", value=overall_profit_margin)
+
+    # Calculate overall average profit margin for all products across all categories
+    overall_avg_profit_margin = (df['Profit'].sum() / df['Sales'].sum()) * 100
+
+    # Show the difference between the overall average profit margin and the selected items' profit margin
+    profit_margin_difference = overall_profit_margin - overall_avg_profit_margin
+    st.metric(label="Profit Margin Difference", value=profit_margin_difference, delta=True)
+else:
+    st.write("No data available for the selected category and subcategories.")
